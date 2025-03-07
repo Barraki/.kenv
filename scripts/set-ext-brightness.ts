@@ -4,6 +4,8 @@
 
 import "@johnlindquist/kit";
 import ddcci from "@hensm/ddcci";
+import { parseDisplayPath } from "../utils/parseDisplayPath";
+import { DisplayObject } from "../types/ddc";
 
 /**
  * Sets the brightness of external displays on Windows using DDC/CI
@@ -11,8 +13,11 @@ import ddcci from "@hensm/ddcci";
 async function setWindowsBrightness(percentage: number): Promise<void> {
   try {
     // Get all available displays
-    const displays = ddcci.getMonitorList();
+    const displays: string[] = ddcci.getMonitorList();
     const displayCount = displays.length;
+
+    // Parse and log display information
+    const displayObjects: DisplayObject[] = displays.map(parseDisplayPath);
 
     if (displayCount === 0) {
       await div(md(`No DDC/CI compatible monitors found.`));
@@ -20,14 +25,14 @@ async function setWindowsBrightness(percentage: number): Promise<void> {
     }
 
     // If there's more than one monitor, ask user which one to adjust
-    let selectedDisplayIndex;
+    let selectedDisplayIndex: DisplayObject | undefined;
 
     if (displayCount === 1) {
-      selectedDisplayIndex = 0;
+      selectedDisplayIndex = displayObjects[0];
     } else {
-      const displayChoices = Array.from({ length: displayCount }, (_, i) => ({
-        name: `Display ${i + 1}`,
-        value: i,
+      const displayChoices = displayObjects.map((display, index) => ({
+        name: `${display.manufacturer}${display.model} ${index === 0 ? "(Primary)" : ""}`,
+        value: display,
       }));
 
       selectedDisplayIndex = await arg(
@@ -41,28 +46,26 @@ async function setWindowsBrightness(percentage: number): Promise<void> {
 
     // Get current brightness
     const currentBrightness = ddcci.getBrightness(
-      displays[selectedDisplayIndex]
+      selectedDisplayIndex.raw
     );
     console.warn(`The current brightness settings: ${currentBrightness}%`);
 
     // Set new brightness
-    ddcci.setBrightness(displays[selectedDisplayIndex], percentage);
+    ddcci.setBrightness(selectedDisplayIndex.raw, percentage);
 
     // Verify the change
-    const newBrightness = ddcci.getBrightness(displays[selectedDisplayIndex]);
+    const newBrightness = ddcci.getBrightness(selectedDisplayIndex.raw);
 
     if (newBrightness !== percentage) {
       console.warn(`Something went wrong. The new brightness is did't set.`);
-      return
+      return;
     }
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`DDC/CI error:`, errorMessage);
     await div(
       md(
-        `Error setting brightness. Make sure DDC/CI is enabled on your monitor.\n\n${
-          errorMessage
-        }`
+        `Error setting brightness. Make sure DDC/CI is enabled on your monitor.\n\n${errorMessage}`
       )
     );
   }
