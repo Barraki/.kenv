@@ -25,14 +25,16 @@ async function setWindowsBrightness(percentage: number): Promise<void> {
     }
 
     // If there's more than one monitor, ask user which one to adjust
-    let selectedDisplayIndex: DisplayObject | undefined;
+    let selectedDisplayIndex: number | undefined;
 
     if (displayCount === 1) {
-      selectedDisplayIndex = displayObjects[0];
+      selectedDisplayIndex = 0;
     } else {
       const displayChoices = displayObjects.map((display, index) => ({
-        name: `${display.manufacturer}${display.model} ${index === 0 ? "(Primary)" : ""}`,
-        value: display,
+        name: `${display.manufacturer}${display.model} ${
+          index === 0 ? "(Primary)" : ""
+        }`,
+        value: index,
       }));
 
       selectedDisplayIndex = await arg(
@@ -44,17 +46,17 @@ async function setWindowsBrightness(percentage: number): Promise<void> {
       );
     }
 
+    const selectedDisplay = displayObjects[selectedDisplayIndex];
+
     // Get current brightness
-    const currentBrightness = ddcci.getBrightness(
-      selectedDisplayIndex.raw
-    );
+    const currentBrightness = ddcci.getBrightness(selectedDisplay.raw);
     console.warn(`The current brightness settings: ${currentBrightness}%`);
 
     // Set new brightness
-    ddcci.setBrightness(selectedDisplayIndex.raw, percentage);
+    ddcci.setBrightness(selectedDisplay.raw, percentage);
 
     // Verify the change
-    const newBrightness = ddcci.getBrightness(selectedDisplayIndex.raw);
+    const newBrightness = ddcci.getBrightness(selectedDisplay.raw);
 
     if (newBrightness !== percentage) {
       console.warn(`Something went wrong. The new brightness is did't set.`);

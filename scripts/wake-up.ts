@@ -14,9 +14,9 @@ const scriptsToRun: { command: string; args: string[] }[] = [
     args: ["50", "0"],
   },
   {
-    command: "set-ext-brightness",
-    args: ["70", "1"],
-  },
+    command: "monitor-power",
+    args: ["1", "1"],
+  }
 ];
 
 for (const script of scriptsToRun) {

@@ -13,13 +13,14 @@ const displayObjects: DisplayObject[] = ddcci.getMonitorList().map(parseDisplayP
 
 const displayChoices = displayObjects.map((display, index) => ({
   name: `${display.manufacturer}${display.model} ${index === 0 ? "(Primary)" : ""}`,
-  value: display,
+  value: index,
 }));
 
-const selectedDisplay = await arg({
+const selectedDisplayIndex = await arg({
   placeholder: "Select display to toggle power:",
   hint: "Choose the display you want to toggle power",
 }, displayChoices);
+const selectedDisplay = displayObjects[selectedDisplayIndex];
 
 const powerMode = ddcci._getVCP(selectedDisplay.raw, VCPFeatureCode.DisplayControl.PowerMode);
 console.warn(`The current power mode: ${powerMode}`);
@@ -29,6 +30,6 @@ const newPowerMode = await arg({
   hint: "Enter the new power mode (1-4)",
 }, powerModes);
 
-ddcci._setVCP(selectedDisplay.raw, VCPFeatureCode.DisplayControl.PowerMode, newPowerMode);
+ddcci._setVCP(selectedDisplay.raw, VCPFeatureCode.DisplayControl.PowerMode, Number(newPowerMode));
 
 console.log(`The new power status: ${powerModes.find((mode) => mode.value === newPowerMode)?.name}`);
